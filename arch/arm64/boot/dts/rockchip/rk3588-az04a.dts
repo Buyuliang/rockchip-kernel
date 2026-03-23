@@ -210,22 +210,12 @@
 		vin-supply = <&vcc5v0_sys>;
 	};
 
-	//vcc_mipidcphy0: vcc-mipidcphy0-regulator {
-	//	compatible = "regulator-fixed";
-	//	gpio = <&gpio2 RK_PC4 GPIO_ACTIVE_HIGH>;
-	//	pinctrl-names = "default";
-	//	pinctrl-0 = <&mipidcphy0_pwr>;
-	//	regulator-name = "vcc_mipidcphy0";
-	//	enable-active-high;
-	//};
-
 	vcc1v8_lcd_n: vcc1v8-lcd-n {
 		compatible = "regulator-fixed";
 		regulator-name = "vcc1v8_lcd_n";
 		regulator-boot-on;
+		regulator-always-on;
 		enable-active-high;
-		pinctrl-0 = <&mipi_pwren_1v8>;
-		pinctrl-names = "default";
 		gpio = <&gpio4 RK_PC6 GPIO_ACTIVE_HIGH>;
 		vin-supply = <&vcc_1v8_s0>;
 	};
@@ -235,8 +225,6 @@
 		regulator-name = "vcc3v3_lcd_n";
 		regulator-boot-on;
 		enable-active-high;
-		pinctrl-0 = <&mipi_pwren_3v3>;
-		pinctrl-names = "default";
 		gpio = <&gpio2 RK_PC4 GPIO_ACTIVE_HIGH>;
 		vin-supply = <&vcc_3v3_s0>;
 	};
@@ -384,20 +372,10 @@
 		pwms = <&pwm13 0 25000 0>;
 	};
 
-	//backlight0: backlight0 {
-	//	compatible = "pwm-backlight";
-	//	pwms = <&pwm3 0 25000 0>;
-	//	enable-gpios = <&gpio1 RK_PC1 GPIO_ACTIVE_HIGH>;
-	//	default-brightness-level = <200>;
-	//	status = "okay";
-	//};
-
 	backlight0: backlight0  {
 		compatible = "pwm-backlight";
 		enable-gpios = <&gpio1 RK_PC1 GPIO_ACTIVE_HIGH>;
 		pwms = <&pwm3 0 25000 0>;
-		//pinctrl-0 = <0x124>;
-		//pinctrl-names = "default";
 		power-supply = <&vcc5v0_sys>;
 		status = "disabled";
 		brightness-levels = <0x00 0x1a 0x21 0x2a 0x33 0x3d 0x49 0x56 0x64 0x74 0x86 0x99 0xad 0xc3 0xdb 0xf5 0x110 0x12e 0x14d 0x16e 0x192 0x1b7 0x1de 0x208 0x234 0x262 0x292 0x2c5 0x2fa 0x332 0x36c 0x3a9 0x3e8>;
@@ -407,10 +385,13 @@
 
 	backlight1: backlight1 {
 		compatible = "pwm-backlight";
+		enable-gpios = <&gpio1 RK_PC6 GPIO_ACTIVE_HIGH>;
 		pwms = <&pwm1 0 25000 0>;
-		enable-gpios = <&gpio1 RK_PC6 GPIO_ACTIVE_LOW>;
-		default-brightness-level = <200>;
+		power-supply = <&vcc5v0_sys>;
 		status = "disabled";
+		brightness-levels = <0x00 0x1a 0x21 0x2a 0x33 0x3d 0x49 0x56 0x64 0x74 0x86 0x99 0xad 0xc3 0xdb 0xf5 0x110 0x12e 0x14d 0x16e 0x192 0x1b7 0x1de 0x208 0x234 0x262 0x292 0x2c5 0x2fa 0x332 0x36c 0x3a9 0x3e8>;
+		default-brightness-level = <0x1d>;
+		max-duty-cycle = <0x4e20>;
 	};
 };
 
@@ -910,6 +891,12 @@
 };
 
 &pinctrl {
+	pcfg_touch_irq: pcfg-touch-irq {
+		bias-pull-up;
+		input-enable;
+		input-schmitt-enable;
+	};
+
 	work {
 		work_ctl: work-ctl {
 			rockchip,pins = <1 RK_PB2 RK_FUNC_GPIO &pcfg_pull_up>;
@@ -1045,18 +1032,13 @@
 			rockchip,pins = <1 RK_PD2 RK_FUNC_GPIO &pcfg_pull_none>;
 		};
 
-		//mipidcphy0_pwr: mipidcphy0-pwr {
-		//	rockchip,pins =
-		//		/* camera power en */
-		//		<2 RK_PC4 RK_FUNC_GPIO &pcfg_pull_none>;
-		//};
 	};
 
 	touch0 {
 		touch0_gpio: touch0-gpio {
 			rockchip,pins =
 				<3 RK_PC0 RK_FUNC_GPIO &pcfg_pull_up>,
-				<3 RK_PC1 RK_FUNC_GPIO &pcfg_pull_none>;
+				<3 RK_PC1 RK_FUNC_GPIO &pcfg_touch_irq>;
 		};
 	};
 
@@ -1064,7 +1046,7 @@
 		touch1_gpio: touch1-gpio {
 			rockchip,pins =
 				<3 RK_PD5 RK_FUNC_GPIO &pcfg_pull_up>,
-				<3 RK_PD1 RK_FUNC_GPIO &pcfg_pull_none>;
+				<3 RK_PD1 RK_FUNC_GPIO &pcfg_touch_irq>;
 		};
 	};
 
@@ -1159,13 +1141,63 @@
 };
 
 &dsi0 {
-	status = "disabled";
+	status = "okay";
 	rockchip,lane-rate = <1000>;
+	ports {
+		port@1 {
+			reg = <1>;
 
+			dsi0_out_panel: endpoint {
+				remote-endpoint = <&panel_in_dsi0>;
+			};
+		};
+	};
+
+	dsi0_panel: panel@0 {
+		compatible = "urt,umo-9522md-t", "ilitek,ili9881c";
+		reg = <0>;
+		backlight = <&backlight0>;
+		power-supply = <&vcc3v3_lcd_n>;
+		reset-gpios = <&gpio1 RK_PC0 GPIO_ACTIVE_LOW>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&lcd0_rst_gpio>;
+
+		port {
+			panel_in_dsi0: endpoint {
+				remote-endpoint = <&dsi0_out_panel>;
+			};
+		};
+	};
 };
 
 &dsi1 {
-	status = "disabled";
+	status = "okay";
+	rockchip,lane-rate = <1000>;
+	ports {
+		port@1 {
+			reg = <1>;
+
+			dsi1_out_panel: endpoint {
+				remote-endpoint = <&panel_in_dsi1>;
+			};
+		};
+	};
+
+	dsi1_panel: panel@0 {
+		compatible = "urt,umo-9522md-t", "ilitek,ili9881c";
+		reg = <0>;
+		backlight = <&backlight1>;
+		power-supply = <&vcc3v3_lcd_n>;
+		reset-gpios = <&gpio1 RK_PD2 GPIO_ACTIVE_LOW>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&lcd1_rst_gpio>;
+
+		port {
+			panel_in_dsi1: endpoint {
+				remote-endpoint = <&dsi1_out_panel>;
+			};
+		};
+	};
 };
 
 /*
@@ -1173,23 +1205,31 @@
  * when dsi0 is enabled
  */
 &dsi0 {
-	status = "disabled";
+	status = "okay";
 };
 
 &dsi0_in_vp2 {
-	status = "disabled";
+	status = "okay";
 };
 
 &dsi0_in_vp3 {
 	status = "disabled";
 };
 
-&mipi_dcphy0 {
+&dsi1_in_vp2 {
 	status = "disabled";
 };
 
+&dsi1_in_vp3 {
+	status = "okay";
+};
+
+&mipi_dcphy0 {
+	status = "okay";
+};
+
 &mipi_dcphy1 {
-	status = "disabled";
+	status = "okay";
 };
 
 &backlight {
@@ -1199,12 +1239,12 @@
 
 &backlight0 {
 	pwms = <&pwm3 0 25000 0>;
-	status = "disabled";
+	status = "okay";
 };
 
 &backlight1 {
 	pwms = <&pwm1 0 25000 0>;
-	status = "disabled";
+	status = "okay";
 };
 
 &pwm2 {
@@ -1212,12 +1252,12 @@
 };
 
 &route_dsi0 {
-	status = "disabled";
-	connect = <&vp3_out_dsi0>;
+	status = "okay";
+	connect = <&vp2_out_dsi0>;
 };
 
 &route_dsi1 {
-	status = "disabled";
+	status = "okay";
 	connect = <&vp3_out_dsi1>;
 };
 
@@ -1226,27 +1266,18 @@
 	pinctrl-0 = <&i2c8m4_xfer>;
 	status = "okay";
 
-	//mipi0_gt1x: gt1x@14 {
-	//	compatible = "goodix,gt1x";
-	//	reg = <0x14>;
-	//	pinctrl-names = "default";
-	//	pinctrl-0 = <&touch0_gpio>;
-	//	goodix,rst-gpio = <&gpio3 RK_PC0 GPIO_ACTIVE_HIGH>;
-	//	goodix,irq-gpio = <&gpio3 RK_PC1 IRQ_TYPE_LEVEL_LOW>;
-	//	power-supply = <&vcc3v3_lcd_n &vcc1v8_lcd_n &vcc1v8_lcd0_n>;
-	//};
-
-	//ili2117@26 {
-	//	compatible = "ilitek,ili2117";
-	//	status = "okay";
-	//	reg = <0x26 0x62>;
-	//	reg-names = "default", "upgrade";
-	//	pinctrl-names = "default";
-	//	pinctrl-0 = <0xed 0xee>;
-	//	interrupt-parent = <&gpio3>;
-	//	interrupts = <RK_PC1 IRQ_TYPE_LEVEL_LOW>;
-	//	reset-gpios = <&gpio3 RK_PC0 GPIO_ACTIVE_HIGH>;
-	//};
+	touchscreen@26 {
+		compatible = "ilitek,ili2117";
+		status = "okay";
+		reg = <0x26>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&touch0_gpio>;
+		interrupt-parent = <&gpio3>;
+		interrupts = <RK_PC1 IRQ_TYPE_EDGE_FALLING>;
+		reset-gpios = <&gpio3 RK_PC0 GPIO_ACTIVE_LOW>;
+		touchscreen-size-x = <800>;
+		touchscreen-size-y = <1280>;
+	};
 
 	pca9555_j19: gpio@20 {
 		compatible = "nxp,pca9555";
@@ -1260,16 +1291,20 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c5m0_xfer>;
 	status = "okay";
+	/delete-node/ gt1x@14;
 
-	//mipi1_gt1x: gt1x@14 {
-	//	compatible = "goodix,gt1x";
-	//	reg = <0x14>;
-	//	pinctrl-names = "default";
-	//	pinctrl-0 = <&touch1_gpio>;
-	//	goodix,rst-gpio = <&gpio3 RK_PD5 GPIO_ACTIVE_HIGH>;
-	//	goodix,irq-gpio = <&gpio3 RK_PD1 IRQ_TYPE_LEVEL_LOW>;
-	//	//power-supply = <&vcc3v3_lcd_n &vcc1v8_lcd_n &vcc1v8_lcd1_n>;
-	//};
+	touchscreen@26 {
+		compatible = "ilitek,ili2117";
+		status = "okay";
+		reg = <0x26>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&touch1_gpio>;
+		interrupt-parent = <&gpio3>;
+		interrupts = <RK_PD1 IRQ_TYPE_EDGE_FALLING>;
+		reset-gpios = <&gpio3 RK_PD5 GPIO_ACTIVE_LOW>;
+		touchscreen-size-x = <800>;
+		touchscreen-size-y = <1280>;
+	};
 
 	pca9555_j11: gpio@20 {
 		compatible = "nxp,pca9555";
@@ -1283,16 +1318,6 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&i2c7m2_xfer>;
 	status = "okay";
-
-	//edp1_gt1x: gt1x@14 {
-	//	compatible = "goodix,gt1x";
-	//	reg = <0x14>;
-	//	pinctrl-names = "default";
-	//	pinctrl-0 = <&touch_edp_gpio>;
-	//	goodix,rst-gpio = <&gpio1 RK_PD1 GPIO_ACTIVE_HIGH>;
-	//	goodix,irq-gpio = <&gpio1 RK_PD0 IRQ_TYPE_LEVEL_LOW>;
-	//	//power-supply = <&vcc3v3_lcd_n &vcc1v8_lcd_n &vcc1v8_lcd1_n>;
-	//};
 
 	pca9555_j30: gpio@20 {
 		compatible = "nxp,pca9555";

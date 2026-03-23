@@ -8,6 +8,7 @@
 #include <linux/input/mt.h>
 #include <linux/input/touchscreen.h>
 #include <linux/interrupt.h>
+#include <linux/kernel.h>
 #include <linux/module.h>
 #include <linux/of_device.h>
 #include <linux/sizes.h>
@@ -303,6 +304,25 @@ static const struct ili2xxx_chip ili251x_chip = {
 	.has_pressure_reg	= true,
 };
 
+static void ili210x_scale_to_screen(const struct ili210x *priv,
+				    unsigned int *x, unsigned int *y)
+{
+	unsigned int raw_max;
+
+	if (!priv->chip->resolution)
+		return;
+
+	raw_max = priv->chip->resolution - 1;
+	if (!raw_max)
+		return;
+
+	if (priv->prop.max_x != raw_max)
+		*x = DIV_ROUND_CLOSEST((u64)*x * priv->prop.max_x, raw_max);
+
+	if (priv->prop.max_y != raw_max)
+		*y = DIV_ROUND_CLOSEST((u64)*y * priv->prop.max_y, raw_max);
+}
+
 static bool ili210x_report_events(struct ili210x *priv, u8 *touchdata)
 {
 	struct input_dev *input = priv->input;
@@ -315,6 +335,7 @@ static bool ili210x_report_events(struct ili210x *priv, u8 *touchdata)
 
 		input_mt_slot(input, i);
 		if (input_mt_report_slot_state(input, MT_TOOL_FINGER, touch)) {
+			ili210x_scale_to_screen(priv, &x, &y);
 			touchscreen_report_pos(input, &priv->prop, x, y, true);
 			if (priv->chip->has_pressure_reg)
 				input_report_abs(input, ABS_MT_PRESSURE, z);
