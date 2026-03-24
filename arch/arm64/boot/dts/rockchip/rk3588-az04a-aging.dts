@@ -1,0 +1,13 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+
+/dts-v1/;
+
+#include "rk3588-az04a.dts"
+
+/ {
+	model = "RK3588 AZ04A Aging";
+
+	chosen {
+		bootargs = "earlycon=uart8250,mmio32,0xfeb50000 console=ttyFIQ0 irqchip.gicv3_pseudo_nmi=0 cma=128M@0x90000000 retain_initrd rdinit=/init rcupdate.rcu_expedited=1 rcu_nocbs=all";
+	};
+};
