@@ -24,6 +24,7 @@
 / {
 	model = "RK3588 AZ04A";
 	compatible = "rockchip,rk3588-az04a", "rockchip,rk3588";
+	/delete-node/ chosen;
 
 	/* If hdmirx node is disabled, delete the reserved-memory node here. */
 	reserved-memory {
