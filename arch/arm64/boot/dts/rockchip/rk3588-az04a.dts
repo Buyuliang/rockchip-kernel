@@ -867,8 +867,6 @@
 };
 
 &pcie2x1l0 { // combphy1, to AP6275P
-	pinctrl-0 = <&pcie2x1l0_pins>;
-	pinctrl-names = "default";
 	reset-gpios = <&gpio0 RK_PA0 GPIO_ACTIVE_HIGH>;
 	status = "okay";
 };
@@ -879,13 +877,11 @@
 };
 
 &pcie30phy {
-	rockchip,pcie30-phymode = <PHY_MODE_PCIE_AGGREGATION>; /* P1:PCIe3x2  +  P0:PCIe3x2 */
+	rockchip,pcie30-phymode = <PHY_MODE_PCIE_AGGREGATION>;
 	status = "okay";
 };
 
 &pcie3x4 {
-	pinctrl-0 = <&pcie30x4m2_pins>;
-	pinctrl-names = "default";
     reset-gpios = <&gpio3 RK_PC6 GPIO_ACTIVE_HIGH>;
     vpcie3v3-supply = <&vcc3v3_pcie30>;
     status = "okay";
@@ -923,19 +919,6 @@
 	pcie {
 		pcie-pwren-h-1v8 {
 			rockchip,pins = <0x01 0x14 0x00 0xff>;
-		};
-
-		pcie3x4_pins: pcie3x4-pins {
-			rockchip,pins = <0x03 0x14 0x04 0xff 0x03 0x16 0x04 0xff 0x03 0x15 0x04 0xff>;
-		};
-
-		pcie2x1l0_pins: pcie2x1l0-pins {
-			rockchip,pins = /* pcie30x1_0_clkreqn_m2 */
-							<1 RK_PB5 4 &pcfg_pull_none>,
-							/* pcie30x1_0_perstn_m2 */
-							<1 RK_PB4 4 &pcfg_pull_none>,
-							/* pcie30x1_0_waken_m2 */
-							<1 RK_PB3 4 &pcfg_pull_none>;
 		};
 	};
 
